@@ -76,7 +76,7 @@ def getDB():
         print("No Profile selected. Please use tl connect to select a profile.", str(e))
         return False
     
-class States:
+class UserStates:
     """
     An enum for User states
     """
@@ -165,7 +165,7 @@ def checkUserCanBorrow(name_or_id:str, db:sql.Connection):
         return True if delayed_book_count < max_delayed_books else Codes.Borrowing.UserDelayedBook
     if max_books != "*":
         return True if book_count < max_books else Codes.Borrowing.UserTooManyBooks
-    return Codes.Borrowing.UserBanned if state == States.Banned else True
+    return Codes.Borrowing.UserBanned if state == UserStates.Banned else True
 
 def plOrSg(val:int, pl:str, sg:str):
     return pl if val != 1 else sg

@@ -12,6 +12,8 @@ import urllib.request
 import codes 
 from dlxml import DeliciousXML  
 from time import sleep
+import csv
+from lib import UserStates
 
 BOOKS_API_BASE_LINK = "https://www.googleapis.com/books/v1/volumes?q=isbn:"
 
@@ -36,7 +38,7 @@ remove_user.add_argument("-n", "--name", help = "ID to remove.", required=True, 
 
 query_user = user_commands_p.add_parser("query", help="Query Users by different criteria.")
 query_user.add_argument("-d", "--delayed", help="Get all users that have delayed books.", action="store_true")
-query_user.add_argument("-s", "--sql", help="Execute an SQL statement. For more info consult tl help sql", type=str)
+# query_user.add_argument("-s", "--sql", help="Execute an SQL statement. For more info consult tl help sql", type=str) TODO: implement query by SQL SELECT statement
 query_user.add_argument("-e", "--empty", help="Get all users that have no books.", action="store_true")
 query_user.add_argument("-r", "--borrowed", help="Get all users that have books.", action="store_true")
 query_user.add_argument("-b", "--banned", help="Show all banned users", action="store_true")
@@ -44,7 +46,6 @@ query_user.add_argument("-a", "--active", help="Show all active users", action="
 query_user.add_argument("-n", "--inactive", help="Show all inactive users", action="store_true")
 query_user.add_argument("-j", "--export-json", help="Export as json.", type=FileType(), metavar="json_file")
 query_user.add_argument("-t", "--export-txt", help="Export as txt.", type=FileType(), metavar="txt_file")
-query_user.add_argument("-x", "--export-xml", help="Export as xml.", type=FileType(), metavar="xml_file")
 query_user.add_argument("-c", "--export-csv", help="Export as csv.", type=FileType(), metavar="csv_file")
 
 manage_user = user_commands_p.add_parser("manage", help="Manage users database.") # TODO
@@ -213,16 +214,25 @@ else:
                 case "query":                                                                                                            # TODO
                     db = lib.getDB()
                     query = "SELECT * FROM users"
-                    keys = ["ID", "Creation Date", "Username", "State"]
+                    cols = ["ID", "Creation Date", "Name", "User State"]
 
                     if args.delayed:
-                        query = "SELECT * FROM borrows b JOIN users u ON b.borrower_id = u.id WHERE delayed=1"
+                        query = "SELECT u.* FROM borrows b JOIN users u ON b.borrower_id = u.id WHERE delayed=1"
 
                     if args.empty:
                         query = "SELECT * FROM users u WHERE NOT EXISTS ( SELECT 1 FROM borrows b WHERE b.borrower_id = u.id);"
 
                     if args.borrowed:
-                        query = "SELECT * FROM users u JOIN borrows b ON b.borrower_id = u.id WHERE b.borrower_id = u.id"
+                        query = "SELECT u.* FROM users u JOIN borrows b ON b.borrower_id = u.id WHERE b.borrower_id = u.id"
+
+                    if args.active:
+                        query = "SELECT * FROM users WHERE state = " + str(UserStates.Active)
+
+                    if args.inactive:
+                        query = "SELECT * FROM users WHERE state = " + str(UserStates.Inactive)
+
+                    if args.banned:
+                        query = "SELECT * FROM users WHERE state = " + str(UserStates.Banned)
                         
                     db = lib.getDB()
 
@@ -232,6 +242,30 @@ else:
                     cur = db.cursor()
                     res = cur.execute(query)
                     print(res.fetchall())
+
+                    if args.export_csv:
+                        with open(args.export_json, "w") as f:
+                            writer = csv.DictWriter(f, cols)
+                            for i in res.fetchall():
+                                writer.writerow()
+
+                    if args.export_json:
+                        with open(args.export_json, "w") as f:
+                            jsn.dump([map(lambda x: i[cols[i.index(x)]], i) for i in res.fetchall()], f)
+
+                    if args.export_txt:
+                        with open(args.export_json, "w") as f:
+                            string = ""
+                            for i in res.fetchall():
+                                string += f"""
+User '{i[2]}'
+------------------
+ID: {i[0]}
+created at: {i[1]}
+State: {i[3]}
+"""
+                            f.write(string)
+
                     quit(0)
 
         case "borrow":
