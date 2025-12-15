@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, FileType, _HelpAction
+from argparse import ArgumentParser, FileType
 from sys import argv
 import sqlite3 as sql
 import yaml as yml
@@ -9,10 +9,7 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 import pyfzf.pyfzf as f
 import urllib.request
-import textwrap as txw
-from lib import States
 import codes 
-from xml.etree import ElementTree as ETree
 from dlxml import DeliciousXML  
 from time import sleep
 
