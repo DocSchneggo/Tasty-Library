@@ -1,0 +1,1 @@
+& 'C:\Users\matia\Documents\coding\Tasty Library\.venv\Scripts\python.exe' "C:\Users\matia\Documents\coding\Tasty Library\main.py"
