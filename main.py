@@ -21,7 +21,7 @@ import lib
 import presets as prs
 
 parser = ArgumentParser("tl")
-parser.add_argument("-i", "--interactive", action="store_true", help="Start in interactive mode") # TODO: implement
+# parser.add_argument("-i", "--interactive", action="store_true", help="Start in interactive mode (Work in progress)") # TODO: implement
 commands = parser.add_subparsers(
     title="command",
     dest="subcommands"
