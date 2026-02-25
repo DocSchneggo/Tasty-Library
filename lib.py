@@ -87,6 +87,9 @@ class UserStates:
     Special1 = 4
 
 def table(keys:list[str], values:list, spacing:int=30):
+    """
+    Generates a table from keys and values with a set spacing.
+    """
     string_ = []
     for i in keys:
         string_.append(f"{i.ljust(spacing)}")
@@ -102,6 +105,9 @@ def table(keys:list[str], values:list, spacing:int=30):
     print(string)
 
 def fzf_book(data:list):
+    """
+    A fzf-like list for selecting a book.
+    """
     string:list[str] = []
     for i in data:
         string.append(f"{"BORROWED" if i[6] else "        "} | {str(i[0]).ljust(5)} | {str(i[2])[:50].ljust(50)} | {str(i[5])[:40].ljust(40)} | {str(i[4])[:50]}")
@@ -123,6 +129,9 @@ def fzf_book(data:list):
 
 
 def confirm(prompt:str, options:dict={"y":True, "n":False}, default="y"):
+    """
+    Confirmation prompt with customisable options.
+    """
     conf = input(f"{prompt} [{"/".join([(i.upper() if default == i else i) for i in list(options.keys())])}]: ").lower()
     if conf not in options.keys():
         conf = default
@@ -130,11 +139,17 @@ def confirm(prompt:str, options:dict={"y":True, "n":False}, default="y"):
     return options[conf]
 
 def getConfig():
+    """
+    Gets the tl config file.
+    """
     with open(path.Path(__file__).parent / "config.json", "r") as f:
         config_data = jsn.load(f)
     return config_data
 
 def getProfileSettings():
+    """
+    Gets the settings from the active profile.
+    """
     try:
         path_ = getConfig()["active_profile_path"]
         with open(path.Path(path_) / "settings.yml") as f:
@@ -144,6 +159,9 @@ def getProfileSettings():
         return False
     
 def checkUserCanBorrow(name_or_id:str, db:sql.Connection):
+    """
+    Checks if the user can borrow books using the criteria defined in the profile's setting.yml file.
+    """
     cur = db.cursor()
 
     user_res_u = cur.execute("SELECT u.* FROM users u LEFT JOIN borrows b ON u.id=b.borrower_id WHERE u.id=? OR u.name=?", (name_or_id, name_or_id))
