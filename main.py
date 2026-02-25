@@ -62,7 +62,7 @@ borrow_p = commands.add_parser("borrow", help="Borrow books by user", aliases=["
 borrow_p.add_argument("name", help="Username or id", nargs="*")
 
 return_p = commands.add_parser("return", aliases=["r"], help="return books")
-return_by = return_p.add_mutually_exclusive_group()
+return_by = return_p.add_mutually_exclusive_group(required=True)
 return_by.add_argument("userid", help="user id", nargs="*")
 return_by.add_argument("borrow_id", help="borrow id", nargs="*")
 return_by.add_argument("username", help="username", nargs="*")
@@ -290,6 +290,10 @@ State: {i[3]}
 
         user_res = cur.execute("SELECT * FROM users WHERE name=? OR id=?", (name, name))
         user = user_res.fetchone()
+
+        if not user:
+            borrow_p.print_help()
+            quit(0)
 
         match lib.checkUserCanBorrow(name, db):
             case True:
@@ -609,3 +613,6 @@ Is this information correct? """)
             
             
         setup_p.print_help()
+
+    case _:
+        parser.print_help()
