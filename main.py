@@ -96,7 +96,6 @@ file_valid = lib.Validation(exclude=["?", "\\", "#", "+", "*", "~", "%", "{", "}
 
 args = parser.parse_args(argv[1:])
 
-
 # if args.interactive:
 #    pass
 # else:
@@ -152,7 +151,6 @@ match args.subcommands:
         db.commit()
         db.close()
         quit(0)
-
 
     case "user":
         match args.user_subcommand:
@@ -350,8 +348,6 @@ State: {i[3]}
 
         borrow = None
 
-
-
         if args.borrow_id:
             borrow_id = " ".join(args.borrow_id)
             loan = cur.execute("SELECT * FROM borrows b JOIN users u ON u.id = b.borrower_id WHERE b.id=?", (borrow_id))
@@ -421,7 +417,6 @@ Is this information correct? """)
         
         print("Aborted.")
         quit(0)
-            
     
     case "book":
         match args.book_subcommand:
@@ -539,9 +534,6 @@ Is this information correct? """)
             case _:
                 book_p.print_help()
 
-
-                        
-
     case "setup":
         match args.setup_subcommand:
             case "add":
@@ -609,8 +601,6 @@ Is this information correct? """)
                     db.close()
 
                     quit(0)
-            
-            
             
         setup_p.print_help()
 
