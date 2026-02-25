@@ -9,8 +9,8 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 import pyfzf.pyfzf as f
 import urllib.request
-import codes 
-from dlxml import DeliciousXML  
+import codes
+from dlxml import DeliciousXML
 from time import sleep
 import csv
 from lib import UserStates
