@@ -268,6 +268,9 @@ State: {i[3]}
 
                 quit(0)
 
+            case _:
+                user_commands.print_help()
+
     case "borrow":
         db = lib.getDB()
         
@@ -351,10 +354,9 @@ State: {i[3]}
             borrow = loan.fetchone()
             
 
-        else:
+        if args.username or args.userid:
             loans = []
             if args.username:
-
                 loans = cur.execute("SELECT * FROM ( SELECT * FROM borrows bb LEFT JOIN users u ON u.id = bb.borrower_id WHERE u.name=? ) b LEFT JOIN books bb ON b.book_id=bb.id", (" ".join(args.username),))
             elif args.userid:
                 loans = cur.execute("SELECT * FROM ( SELECT * FROM borrows bb LEFT JOIN users u ON u.id = bb.borrower_id WHERE u.id=? ) b LEFT JOIN books bb ON b.book_id=bb.id", (" ".join(args.userid),))
@@ -386,10 +388,13 @@ State: {i[3]}
             book_ = cur.execute("SELECT * FROM books WHERE id=?", (book_id, ))
             book = book_.fetchone()
 
+        else:
+            return_p.print_help()
+            quit(0)
 
         
         if not borrow:
-            print(f"There is not loan with the id '{args.borrow_id}'.")
+            print(f"There is no loan with the id '{args.borrow_id}'.")
             quit(1)
         
         book_id = borrow[2]
@@ -527,6 +532,8 @@ Is this information correct? """)
                     db.commit()
                     db.close()
                     quit(0)
+            case _:
+                book_p.print_help()
 
 
                         
@@ -598,5 +605,7 @@ Is this information correct? """)
                     db.close()
 
                     quit(0)
+            
+            
             
         setup_p.print_help()
