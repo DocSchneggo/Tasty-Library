@@ -1,0 +1,15 @@
+# Tasty Library - Requirements
+# Install all dependencies with: pip install -r requirements.txt
+
+# Core dependencies (from main.py)
+pyfzf>=0.3.0
+PyYAML>=6.0
+urllib3>=1.26.0
+requests>=2.28.0
+
+# GUI dependencies
+PyQt6>=6.0.0
+PyQt6-sip>=13.0.0
+
+# Optional: for better functionality
+pyqt6-qt6>=6.10.0
