@@ -336,7 +336,7 @@ class TastyLibraryGUI(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Tasty Library - Library Management System")
+        self.setWindowTitle("Tasty Library - No Database Connected")
         self.setGeometry(100, 100, 1200, 700)
         
         self.manager = None
@@ -367,8 +367,6 @@ class TastyLibraryGUI(QMainWindow):
         
         # Create toolbar
         toolbar_layout = QHBoxLayout()
-        self.status_label = QLabel("No database connected")
-        self.status_label.setFont(QFont("Arial", 10))
         toolbar_layout.addWidget(self.status_label)
         toolbar_layout.addStretch()
         
@@ -508,7 +506,7 @@ class TastyLibraryGUI(QMainWindow):
             try:
                 self.manager = LibraryManager(file_path)
                 self.db_path = file_path
-                self.status_label.setText(f"Connected: {Path(file_path).name}")
+                self.setWindowTitle(f"Tasty Library - {Path(file_path).name}")
                 self.load_data()
             except Exception as e:
                 QMessageBox.critical(self, "Connection Error", str(e))
