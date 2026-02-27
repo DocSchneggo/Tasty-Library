@@ -15,7 +15,8 @@ from time import sleep
 import csv
 from lib import UserStates
 
-BOOKS_API_BASE_LINK = "https://www.googleapis.com/books/v1/volumes?q=isbn:"
+def BOOKS_API_BASE_LINK(isbn:str):
+    return f"http://openlibrary.org/api/volumes/brief/isbn/{isbn}.json"
 
 import lib
 import presets as prs
@@ -38,17 +39,17 @@ remove_user.add_argument("-n", "--name", help = "ID to remove.", required=True, 
 
 query_user = user_commands_p.add_parser("query", help="Query Users by different criteria.")
 query_user.add_argument("-d", "--delayed", help="Get all users that have delayed books.", action="store_true")
-# query_user.add_argument("-s", "--sql", help="Execute an SQL statement. For more info consult tl help sql", type=str) TODO: implement query by SQL SELECT statement
+# query_user.add_argument("-s", "--sql", help="Execute an SQL statement. For more info consult tl help sql", type=str)
 query_user.add_argument("-e", "--empty", help="Get all users that have no books.", action="store_true")
 query_user.add_argument("-r", "--borrowed", help="Get all users that have books.", action="store_true")
 query_user.add_argument("-b", "--banned", help="Show all banned users", action="store_true")
 query_user.add_argument("-a", "--active", help="Show all active users", action="store_true")
 query_user.add_argument("-n", "--inactive", help="Show all inactive users", action="store_true")
-query_user.add_argument("-j", "--export-json", help="Export as json.", type=FileType(), metavar="json_file")
-query_user.add_argument("-t", "--export-txt", help="Export as txt.", type=FileType(), metavar="txt_file")
-query_user.add_argument("-c", "--export-csv", help="Export as csv.", type=FileType(), metavar="csv_file")
+query_user.add_argument("-j", "--export-json", help="Export as json.", metavar="json_file")
+query_user.add_argument("-t", "--export-txt", help="Export as txt.", metavar="txt_file")
+query_user.add_argument("-c", "--export-csv", help="Export as csv.", metavar="csv_file")
 
-manage_user = user_commands_p.add_parser("manage", help="Manage users database.") # TODO
+manage_user = user_commands_p.add_parser("manage", help="Manage users database.")
 manage_user.add_argument("-r", "--rename", help="Rename the user.")
 manage_user.add_argument("-b", "--ban", help="Ban the user. For banning, see tl help banning")
 manage_user.add_argument("-s", "--state", help="Set the user state.")
@@ -120,9 +121,9 @@ match args.subcommands:
             quit(1)
 
         try:
-            if not os.path.isfile(path_ / data["rules"]):
-                print("The folder's profile config is invalid")
-                quit(1)
+            # if not os.path.isfile(path_ / data["rules"]):
+            #     print("The folder's profile config is invalid")
+            #     quit(1)
             if not os.path.isfile(path_ / data["user_settings"]):
                 print("The folder's profile config is invalid")
                 quit(1)
@@ -189,6 +190,9 @@ match args.subcommands:
                     quit(1)
 
                 name = " ".join(args.name) if type(args.name) == list else args.name
+                if name == '': 
+                    add_user.print_help()
+                    quit(0)
                 print(f"Adding user '{name}'.")
 
                 db = lib.getDB()
@@ -209,7 +213,7 @@ match args.subcommands:
                 db.close()
                 quit(0)
             
-            case "query":                                                                                                            # TODO
+            case "query":
                 db = lib.getDB()
                 query = "SELECT * FROM users"
                 cols = ["ID", "Creation Date", "Name", "User State"]
@@ -239,22 +243,23 @@ match args.subcommands:
 
                 cur = db.cursor()
                 res = cur.execute(query)
-                print(res.fetchall())
+                data = res.fetchall()
+                lib.table(cols, data, 20)
 
                 if args.export_csv:
-                    with open(args.export_json, "w") as f:
+                    with open(args.export_csv, "w") as f:
                         writer = csv.DictWriter(f, cols)
-                        for i in res.fetchall():
+                        for i in data:
                             writer.writerow()
 
                 if args.export_json:
                     with open(args.export_json, "w") as f:
-                        jsn.dump([map(lambda x: i[cols[i.index(x)]], i) for i in res.fetchall()], f)
+                        jsn.dump([map(lambda x: i[cols[i.index(x)]], i) for i in data], f)
 
                 if args.export_txt:
-                    with open(args.export_json, "w") as f:
+                    with open(args.export_txt, "w") as f:
                         string = ""
-                        for i in res.fetchall():
+                        for i in data:
                             string += f"""
 User '{i[2]}'
 ------------------
@@ -284,12 +289,12 @@ State: {i[3]}
         books_ = cur.execute("SELECT * FROM books bo LEFT JOIN borrows br ON bo.id=br.book_id")
         books = books_.fetchall()
 
-        name = " ".join(args.name)
+        name = " ".join(args.name) if type(args.name) == list else args.name
 
         user_res = cur.execute("SELECT * FROM users WHERE name=? OR id=?", (name, name))
         user = user_res.fetchone()
 
-        if not user:
+        if user == "":
             borrow_p.print_help()
             quit(0)
 
@@ -328,14 +333,16 @@ State: {i[3]}
                 print("No book selected.")
                 quit(0)
 
+        book = book[0]
         book_id = book[0]
 
         try: 
             print(f"Selected Book '{book[2]}'. The book has to be returned the {(dt.now() + td(lib.getProfileSettings()["borrowingDuration"])).date().strftime("%d.%m.%Y")}.")
             cur.execute("INSERT INTO borrows VALUES(NULL, ?, ?, ?, ?, 0)", (str(dt.now().date()), book_id, user[0], str((dt.now() + td(lib.getProfileSettings()["borrowingDuration"])).date())))
             res = cur.execute("UPDATE books SET borrowed_by=?, borrowed_at=? WHERE id=?", (user[0], str(dt.now().date()), book_id))
-        except:
+        except Exception as e:
             print("There was an error with the settings.yml file of the selected profile.")
+            print(e)
             quit(1)
         
         
@@ -426,21 +433,28 @@ Is this information correct? """)
                     quit(1)
                 cur = db.cursor()
                 if not args.manually:
-                    with urllib.request.urlopen(BOOKS_API_BASE_LINK + str(args.isbn)) as f:
-                        text = f.read()
-                        
+                    req = urllib.request.Request(BOOKS_API_BASE_LINK(str(args.isbn)))   
+                    req.add_header("User-Agent", "TastyLibrary/1.0 (docSchneggo@outlook.com)") 
+                    text = urllib.request.urlopen(req).read()
                     decoded_text = text.decode("utf-8")
-                    obj = jsn.loads(decoded_text) # deserializes decoded_text to a Python object
-
-                    volume_info = obj["items"][0] 
-                    authors = ", ".join(obj["items"][0]["volumeInfo"]["authors"])
-                    title = volume_info["volumeInfo"]["title"]
+                    obj = dict(jsn.loads(decoded_text))
                     try:
-                        desc = volume_info["searchInfo"]["textSnippet"]
-                    except:
-                        desc = "< NO DESCRIPTION AVAILABLE >"
-                    
-                    isbn = args.isbn
+                        volume_info = obj["records"][list(obj["records"].keys())[0]]["data"]
+                        authors = ", ".join([i["name"] for i in volume_info["authors"]])
+                        title = volume_info["title"] + " - " + volume_info["subtitle"]
+                        details = obj["records"][list(obj["records"].keys())[0]]["details"]["details"]
+                        try:
+                            desc = details["description"]
+                        except KeyError:
+                            desc = "< NO DESCRIPTION AVAILABLE >"
+                        
+                        if args.yes or lib.confirm_book(title, authors, desc, args.isbn):
+                            res = cur.execute("INSERT INTO books VALUES(NULL, ?, ?, ?, ?, ?, NULL, NULL)", (str(dt.now().date()), title, i, desc, authors))
+                            db.commit()
+                            print(f"Added book '{title}' to database")
+                        
+                    except KeyError:
+                        print("No Book found with ISBN '" + str(args.isbn) + "'.")
                 
                 else:
                     print("Please enter the book data manually.")
@@ -539,7 +553,7 @@ Is this information correct? """)
             case "add":
                 validation_result = file_valid.validate(" ".join(args.name))
                 if not validation_result[0]:
-                    print(f"Character '{validation_result[[1]]}' is not allowed in the name")
+                    print(f"Character '{validation_result[1]}' is not allowed in the name")
                     quit(1)
                 name = " ".join(args.name)
                 print(f"Adding configuration with name '{name}'")
@@ -548,7 +562,7 @@ Is this information correct? """)
                 except:
                     print("A configuration with that name already exists in the local folder.")
                     quit(1)
-                open(f"{" ".join(args.name)}.tl\\{" ".join(args.name)}.db", "w").close()
+                open(path.Path(f"{" ".join(args.name)}.tl") / " ".join(args.name) + ".db", "w").close()
                 db = sql.connect(f"{" ".join(args.name)}.tl\\{" ".join(args.name)}.db")
                 db.executescript(lib.SQL_CREATE_TABLES)
                 db.commit()
@@ -570,33 +584,34 @@ Is this information correct? """)
                     failed = []
                     
                     for i in xml.isbns:
-                        with urllib.request.urlopen(BOOKS_API_BASE_LINK + str(i)) as f:
-                            text = f.read()
-                            
+                        req = urllib.request.Request(BOOKS_API_BASE_LINK(str(i)))   
+                        req.add_header("User-Agent", "TastyLibrary/1.0 (docSchneggo@outlook.com)") 
+                        text = urllib.request.urlopen(req).read()
                         decoded_text = text.decode("utf-8")
-                        obj = jsn.loads(decoded_text) # deserializes decoded_text to a Python object
+                        obj = dict(jsn.loads(decoded_text))
                         try:
-                            volume_info = obj["items"][0] 
-                            authors = ", ".join(obj["items"][0]["volumeInfo"]["authors"])
-                            title = volume_info["volumeInfo"]["title"]
+                            volume_info = obj["records"][list(obj["records"].keys())[0]]["data"]
+                            authors = ", ".join([i["name"] for i in volume_info["authors"]])
+                            title = volume_info["title"] + " - " + volume_info["subtitle"]
+                            details = obj["records"][list(obj["records"].keys())[0]]["details"]["details"]
                             try:
-                                desc = volume_info["searchInfo"]["textSnippet"]
+                                desc = details["description"]["value"] if type(details["description"]) == dict else details["description"]
                             except:
                                 desc = "< NO DESCRIPTION AVAILABLE >"
-                        except:
+                            
+                            if args.yes or lib.confirm_book(title, authors, desc, i):
+                                print(desc)
+                                res = cur.execute("INSERT INTO books VALUES(NULL, ?, ?, ?, ?, ?, NULL, NULL)", (str(dt.now().date()), title, i, desc, authors))
+                                db.commit()
+                                print(f"Added book '{title}' to database")
+                            
+                        except KeyError:
                             print("No Book found with ISBN '" + str(i) + "'.")
                             failed.append(i)
-
-
-                        if args.yes or lib.confirm_book(title, authors, desc, args.isbn):
-
-                            res = cur.execute("INSERT INTO books VALUES(NULL, ?, ?, ?, ?, ?, NULL, NULL)", (str(dt.now().date()), title, i, desc, authors))
-                            db.commit()
-                            print(f"Added book '{title}' to database")
-                                                    
+                        
                         sleep(3)
 
-                    print("Failed Books: \n- " + "\n- ".join(failed))
+                    print("Failed Books: \n- " + "\n- ".join(failed)) if failed else None
                     
                     db.close()
 

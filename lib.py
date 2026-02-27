@@ -15,9 +15,9 @@ class Validation:
                     return False, i
             return True, None
         
-        for i in s:
-            if i in self.exclude:
-                return False, i
+        for j in s:
+            if j in self.exclude:
+                return False, j
             
         return True, None
     
@@ -44,7 +44,8 @@ CREATE TABLE borrows (
   book_id INT,
   borrower_id INT,
   return_date VARCHAR(255),
-  renewed INT
+  renewed INT,
+  delayed BOOLEAN
 );
 CREATE TABLE settings (
   id INTEGER PRIMARY KEY,
@@ -169,7 +170,6 @@ def checkUserCanBorrow(name_or_id:str, db:sql.Connection):
     borrows_of_user = book_res.fetchall()
     user = user_res_u.fetchone()
     if not user_res_u.fetchall(): return True
-    user
 
     delayed_book_count = sum([1 if i[0] == dt.now().date() else 0 for i in borrows_of_user])
     book_count = len(borrows_of_user)
