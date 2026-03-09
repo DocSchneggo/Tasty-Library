@@ -1,4 +1,4 @@
-import sys
+ import sys
 import sqlite3 as sql
 import json as jsn
 import yaml as yml
@@ -364,13 +364,6 @@ class TastyLibraryGUI(QMainWindow):
         self.setCentralWidget(central_widget)
         
         layout = QVBoxLayout()
-        
-        # Create toolbar
-        toolbar_layout = QHBoxLayout()
-        toolbar_layout.addWidget(self.status_label)
-        toolbar_layout.addStretch()
-        
-        layout.addLayout(toolbar_layout)
         
         # Create tab widget
         self.tabs = QTabWidget()
